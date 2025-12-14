@@ -1,7 +1,25 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /** @type {import('next').NextConfig} */
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+
 const nextConfig = {
-  webpack(config: any, { isServer }: any) {
+  webpack(config: any, { isServer, dev }: any) {
+    // 如果还没有 MiniCssExtractPlugin，添加它
+    if (!isServer) {
+      const hasPlugin = config.plugins.some(
+        (plugin: any) => plugin instanceof MiniCssExtractPlugin
+      );
+      if (!hasPlugin) {
+        config.plugins.push(
+          new MiniCssExtractPlugin({
+            filename: 'static/css/[name].[contenthash].css',
+            chunkFilename: 'static/css/[name].[contenthash].css',
+          })
+        );
+      }
+    }
+
     // 查找 Next.js 默认的 CSS 规则
     const rules = config.module.rules;
     const oneOfRule = rules.find(
@@ -20,7 +38,9 @@ const nextConfig = {
                 options: {
                   modules: {
                     mode: 'local',
-                    localIdentName: '[local]_[hash:base64:5]',
+                    localIdentName: dev
+                      ? '[local]_[hash:base64:5]'
+                      : '[hash:base64:8]',
                     exportOnlyLocals: true, // 服务端只导出类名
                     namedExport: false, // 使用默认导出
                   },
@@ -37,14 +57,18 @@ const nextConfig = {
               },
             ]
           : [
-              // 客户端配置
-              require.resolve('style-loader'),
+              // 客户端配置 - 提取 CSS 到独立文件
+              {
+                loader: MiniCssExtractPlugin.loader,
+              },
               {
                 loader: require.resolve('css-loader'),
                 options: {
                   modules: {
                     mode: 'local',
-                    localIdentName: '[local]_[hash:base64:5]',
+                    localIdentName: dev
+                      ? '[local]_[hash:base64:5]'
+                      : '[hash:base64:8]',
                     namedExport: false, // 使用默认导出
                   },
                   importLoaders: 1,
@@ -73,8 +97,10 @@ const nextConfig = {
               },
             ]
           : [
-              // 客户端处理全局样式
-              require.resolve('style-loader'),
+              // 客户端处理全局样式 - 提取到独立文件
+              {
+                loader: MiniCssExtractPlugin.loader,
+              },
               {
                 loader: require.resolve('css-loader'),
                 options: {
