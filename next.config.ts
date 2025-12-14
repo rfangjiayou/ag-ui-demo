@@ -1,5 +1,6 @@
-/* eslint-disable @typescript-eslint/no-require-imports */
 /* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-require-imports */
+
 /** @type {import('next').NextConfig} */
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
@@ -20,7 +21,6 @@ const nextConfig = {
       }
     }
 
-    // 查找 Next.js 默认的 CSS 规则
     const rules = config.module.rules;
     const oneOfRule = rules.find(
       (rule: any) => typeof rule === 'object' && rule.oneOf
@@ -32,7 +32,6 @@ const nextConfig = {
         test: /\.module\.less$/,
         use: isServer
           ? [
-              // 服务端配置 - 只导出类名映射
               {
                 loader: require.resolve('css-loader'),
                 options: {
@@ -41,8 +40,8 @@ const nextConfig = {
                     localIdentName: dev
                       ? '[local]_[hash:base64:5]'
                       : '[hash:base64:8]',
-                    exportOnlyLocals: true, // 服务端只导出类名
-                    namedExport: false, // 使用默认导出
+                    exportOnlyLocals: true,
+                    namedExport: false,
                   },
                   importLoaders: 1,
                 },
@@ -57,7 +56,6 @@ const nextConfig = {
               },
             ]
           : [
-              // 客户端配置 - 提取 CSS 到独立文件
               {
                 loader: MiniCssExtractPlugin.loader,
               },
@@ -69,7 +67,7 @@ const nextConfig = {
                     localIdentName: dev
                       ? '[local]_[hash:base64:5]'
                       : '[hash:base64:8]',
-                    namedExport: false, // 使用默认导出
+                    namedExport: false,
                   },
                   importLoaders: 1,
                 },
@@ -85,19 +83,34 @@ const nextConfig = {
             ],
       };
 
-      // 全局 Less 规则
+      // 全局 Less 规则 - 简化处理
       const lessGlobalRule = {
         test: /\.less$/,
         exclude: /\.module\.less$/,
+        sideEffects: true, // 标记为有副作用，确保被处理
         use: isServer
           ? [
-              // 服务端忽略全局样式
+              // 服务端：简单处理，返回空导出
               {
-                loader: require.resolve('null-loader'),
+                loader: require.resolve('css-loader'),
+                options: {
+                  modules: {
+                    exportOnlyLocals: true,
+                  },
+                  importLoaders: 1,
+                },
+              },
+              {
+                loader: require.resolve('less-loader'),
+                options: {
+                  lessOptions: {
+                    javascriptEnabled: true,
+                  },
+                },
               },
             ]
           : [
-              // 客户端处理全局样式 - 提取到独立文件
+              // 客户端：正常提取CSS
               {
                 loader: MiniCssExtractPlugin.loader,
               },
@@ -118,7 +131,6 @@ const nextConfig = {
             ],
       };
 
-      // 将 Less 规则插入到 oneOf 规则的最前面
       oneOfRule.oneOf.unshift(lessModuleRule, lessGlobalRule);
     }
 
