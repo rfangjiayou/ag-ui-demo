@@ -11,7 +11,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint-staged": "lint-staged",
-    "prepare": "husky"
+    "prepare": "husky",
+    "fix": "npm run lint:fix && npm run format"
   },
   "dependencies": {
     "@ant-design/icons": "^6.1.0",
